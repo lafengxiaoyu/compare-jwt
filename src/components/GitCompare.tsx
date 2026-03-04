@@ -10,6 +10,7 @@ interface CompareResult {
   files: JwtFile[];
   totalFiles: number;
   processedFiles: number;
+  error?: string;
 }
 
 interface TranslationFunction {

@@ -125,3 +125,5 @@ export const translations = {
 };
 
 export type Language = 'en' | 'zh' | 'nl';
+
+export type Translations = typeof translations;

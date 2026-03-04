@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { translations, Language, Translations } from './translations';
+import { translations, Language } from './translations';
 
 export const useTranslation = () => {
   const [language, setLanguage] = useState<Language>('en');
