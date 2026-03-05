@@ -294,3 +294,43 @@ body {
 .stat.deletions {
   color: #f85149;
 }
+
+.claims-table-container {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.claims-table-container table {
+  font-size: 13px;
+}
+
+.claims-table-container th {
+  background: #21262d;
+  border-bottom: 2px solid #30363d;
+  padding: 12px;
+  text-align: left;
+  color: #c9d1d9;
+  font-weight: 600;
+}
+
+.claims-table-container td {
+  border-bottom: 1px solid #21262d;
+  padding: 12px;
+  vertical-align: top;
+}
+
+.claims-table-container tr:last-child td {
+  border-bottom: none;
+}
+
+.claims-table-container pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}

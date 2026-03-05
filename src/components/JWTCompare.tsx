@@ -38,6 +38,7 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
   const [jwt2, setJwt2] = useState('');
   const [diffResult, setDiffResult] = useState<diff.Change[]>([]);
   const [error, setError] = useState('');
+  const [viewMode, setViewMode] = useState<'diff' | 'table'>('diff');
 
   const decodeJWT = (token: string) => {
     try {
@@ -101,6 +102,76 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errors.parseFailed'));
     }
+  };
+
+  const getDecodedJWTs = () => {
+    if (!jwt1.trim() || !jwt2.trim()) return null;
+    try {
+      return {
+        decoded1: JSON.parse(decodeJWT(jwt1)),
+        decoded2: JSON.parse(decodeJWT(jwt2))
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const renderClaimsTable = () => {
+    const decoded = getDecodedJWTs();
+    if (!decoded) return null;
+
+    const { decoded1, decoded2 } = decoded;
+    const allKeys = new Set([...Object.keys(decoded1), ...Object.keys(decoded2)]);
+    const keys = Array.from(allKeys);
+
+    return (
+      <div className="claims-table-container">
+        <h3 style={{ marginBottom: '16px' }}>Claims Comparison</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #30363d' }}>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>Claim</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>JWT 1</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>JWT 2</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {keys.map((key) => {
+              const value1 = decoded1[key];
+              const value2 = decoded2[key];
+              const value1Str = JSON.stringify(value1, null, 2);
+              const value2Str = JSON.stringify(value2, null, 2);
+              const isAdded = !(key in decoded1) && (key in decoded2);
+              const isRemoved = (key in decoded1) && !(key in decoded2);
+              const isChanged = (key in decoded1) && (key in decoded2) && JSON.stringify(value1) !== JSON.stringify(value2);
+
+              return (
+                <tr key={key} style={{ borderBottom: '1px solid #21262d' }}>
+                  <td style={{ padding: '12px', color: '#c9d1d9', fontWeight: '500' }}>{key}</td>
+                  <td style={{ padding: '12px', color: isRemoved ? '#f85149' : '#8b949e' }}>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {isRemoved ? '-' : ''}{value1Str}
+                    </pre>
+                  </td>
+                  <td style={{ padding: '12px', color: isAdded ? '#3fb950' : '#8b949e' }}>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {isAdded ? '+' : ''}{value2Str}
+                    </pre>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    {isAdded && <span style={{ color: '#3fb950', fontWeight: 'bold' }}>Added</span>}
+                    {isRemoved && <span style={{ color: '#f85149', fontWeight: 'bold' }}>Removed</span>}
+                    {isChanged && <span style={{ color: '#d29922', fontWeight: 'bold' }}>Changed</span>}
+                    {!isAdded && !isRemoved && !isChanged && <span style={{ color: '#8b949e' }}>Unchanged</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   const renderDiff = () => {
@@ -222,7 +293,27 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
         {t('jwtCompare.button')}
       </button>
 
-      {diffResult.length > 0 && renderDiff()}
+      {diffResult.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ marginBottom: '15px' }}>
+            <button
+              className={`view-toggle ${viewMode === 'diff' ? 'active' : ''}`}
+              onClick={() => setViewMode('diff')}
+              style={{ marginRight: '10px', padding: '8px 16px', background: viewMode === 'diff' ? '#238636' : '#21262d', color: '#c9d1d9', border: '1px solid #30363d', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              Diff View
+            </button>
+            <button
+              className={`view-toggle ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              style={{ padding: '8px 16px', background: viewMode === 'table' ? '#238636' : '#21262d', color: '#c9d1d9', border: '1px solid #30363d', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              Claims Table
+            </button>
+          </div>
+          {viewMode === 'diff' ? renderDiff() : renderClaimsTable()}
+        </div>
+      )}
     </div>
   );
 };
