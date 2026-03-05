@@ -6,7 +6,8 @@ export const translations = {
     },
     tabs: {
       jwt: 'JWT File Compare',
-      git: 'Git Commit Compare'
+      git: 'Git Commit Compare',
+      multiEnv: 'Multi-Env Compare'
     },
     jwtCompare: {
       title: 'JWT/JWE Token 1',
@@ -31,6 +32,31 @@ export const translations = {
       hint: 'Note: Only checking .json, .txt, .jwt, .token, .env, .config files that may contain JWT',
       emptyError: 'Please fill all fields'
     },
+    multiEnvCompare: {
+      title: 'Multi-Environment JWT Compare',
+      apiUrl: 'API URL:',
+      apiPlaceholder: 'http://localhost:3001',
+      repoPath: 'Repository Path *:',
+      repoPlaceholder: '/path/to/your/repo',
+      commit1: 'Commit 1 (Start) *:',
+      commit1Placeholder: 'HEAD~10 or commit hash',
+      commit2: 'Commit 2 (End) *:',
+      commit2Placeholder: 'HEAD or commit hash',
+      envDirs: 'Environment Directories (optional, comma-separated):',
+      envDirsPlaceholder: 'config/prd, config/acc, config/tst',
+      envDirsHint: 'Leave empty to auto-detect environment directories (prd, acc, tst, etc.)',
+      button: 'Start Compare',
+      loading: 'Comparing...',
+      emptyError: 'Please fill all required fields',
+      summary: 'Comparison Summary',
+      jwtFiles: 'JWT files',
+      environment: 'Environment',
+      file: 'File',
+      addedLines: 'lines added',
+      removedLines: 'lines removed',
+      unchangedLines: 'lines unchanged',
+      noChanges: 'No JWT file changes found'
+    },
     diff: {
       stats: '{{additions}} additions',
       deletions: '{{deletions}} deletions'
@@ -47,7 +73,8 @@ export const translations = {
     },
     tabs: {
       jwt: 'JWT文件对比',
-      git: 'Git提交对比'
+      git: 'Git提交对比',
+      multiEnv: '多环境对比'
     },
     jwtCompare: {
       title: 'JWT/JWE Token 1',
@@ -72,6 +99,31 @@ export const translations = {
       hint: '提示：只检查 .json, .txt, .jwt, .token, .env, .config 等可能包含JWT的文件',
       emptyError: '请填写所有字段'
     },
+    multiEnvCompare: {
+      title: '多环境 JWT 对比',
+      apiUrl: 'API 地址:',
+      apiPlaceholder: 'http://localhost:3001',
+      repoPath: '仓库路径 *:',
+      repoPlaceholder: '/path/to/your/repo',
+      commit1: 'Commit 1 (起始) *:',
+      commit1Placeholder: 'HEAD~10 或 commit hash',
+      commit2: 'Commit 2 (结束) *:',
+      commit2Placeholder: 'HEAD 或 commit hash',
+      envDirs: '环境目录 (可选，逗号分隔):',
+      envDirsPlaceholder: 'config/prd, config/acc, config/tst',
+      envDirsHint: '留空则自动检测环境目录 (prd, acc, tst 等)',
+      button: '开始对比',
+      loading: '对比中...',
+      emptyError: '请填写所有必填字段',
+      summary: '对比结果汇总',
+      jwtFiles: '个 JWT 文件',
+      environment: '环境',
+      file: '文件',
+      addedLines: '行新增',
+      removedLines: '行删除',
+      unchangedLines: '行未变',
+      noChanges: '未找到 JWT 文件变化'
+    },
     diff: {
       stats: '+{{additions}} 个添加',
       deletions: '-{{deletions}} 个删除'
@@ -88,7 +140,8 @@ export const translations = {
     },
     tabs: {
       jwt: 'JWT Bestand Vergelijken',
-      git: 'Git Commit Vergelijken'
+      git: 'Git Commit Vergelijken',
+      multiEnv: 'Multi-Env Vergelijken'
     },
     jwtCompare: {
       title: 'JWT/JWE Token 1',
@@ -112,6 +165,31 @@ export const translations = {
       scanning: '{{total}} gewijzigde bestanden gescand, {{found}} JWT bestanden gevonden',
       hint: 'Let op: Alleen .json, .txt, .jwt, .token, .env, .config bestanden die JWT kunnen bevatten worden gecontroleerd',
       emptyError: 'Vul alle velden in'
+    },
+    multiEnvCompare: {
+      title: 'Multi-Omgeving JWT Vergelijken',
+      apiUrl: 'API URL:',
+      apiPlaceholder: 'http://localhost:3001',
+      repoPath: 'Repository Pad *:',
+      repoPlaceholder: '/pad/naar/jouw/repo',
+      commit1: 'Commit 1 (Start) *:',
+      commit1Placeholder: 'HEAD~10 of commit hash',
+      commit2: 'Commit 2 (Einde) *:',
+      commit2Placeholder: 'HEAD of commit hash',
+      envDirs: 'Omgeving Mappen (optioneel, komma-gescheiden):',
+      envDirsPlaceholder: 'config/prd, config/acc, config/tst',
+      envDirsHint: 'Laat leeg om omgeving mappen automatisch te detecteren (prd, acc, tst, etc.)',
+      button: 'Start Vergelijken',
+      loading: 'Vergelijken...',
+      emptyError: 'Vul alle verplichte velden in',
+      summary: 'Vergelijking Samenvatting',
+      jwtFiles: 'JWT bestanden',
+      environment: 'Omgeving',
+      file: 'Bestand',
+      addedLines: 'regels toegevoegd',
+      removedLines: 'regels verwijderd',
+      unchangedLines: 'regels ongewijzigd',
+      noChanges: 'Geen JWT bestandswijzigingen gevonden'
     },
     diff: {
       stats: '+{{additions}} toevoegingen',

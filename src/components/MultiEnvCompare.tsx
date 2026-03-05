@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-
-interface TranslationFunction {
-  (key: string, params?: Record<string, string | number>): string;
-}
-
-interface MultiEnvCompareProps {
-  t?: TranslationFunction;
-}
+import { useTranslation } from '../i18n';
 
 interface DiffChange {
   value: string;
@@ -26,7 +19,8 @@ interface EnvironmentResult {
   jwtFiles: JWTFile[];
 }
 
-const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
+const MultiEnvCompare: React.FC = () => {
+  const { t } = useTranslation();
   const [repoPath, setRepoPath] = useState('');
   const [commit1, setCommit1] = useState('');
   const [commit2, setCommit2] = useState('');
@@ -42,7 +36,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
     setLoading(true);
 
     if (!repoPath.trim() || !commit1.trim() || !commit2.trim()) {
-      setError('请填写所有必填字段');
+      setError(t('multiEnvCompare.emptyError'));
       setLoading(false);
       return;
     }
@@ -68,13 +62,13 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || '请求失败');
+        throw new Error(data.error || 'Request failed');
       }
 
       const data = await response.json();
       setResult(data.environments);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '对比失败');
+      setError(err instanceof Error ? err.message : t('multiEnvCompare.emptyError'));
     } finally {
       setLoading(false);
     }
@@ -123,14 +117,14 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
     <div>
       <div className="input-section">
         <div className="input-box">
-          <h3>多环境 JWT 对比</h3>
+          <h3>{t('multiEnvCompare.title')}</h3>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ color: '#c9d1d9', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
-              API 地址:
+              {t('multiEnvCompare.apiUrl')}
             </label>
             <input
               type="text"
-              placeholder="http://localhost:3001"
+              placeholder={t('multiEnvCompare.apiPlaceholder')}
               value={apiBaseUrl}
               onChange={(e) => setApiBaseUrl(e.target.value)}
               style={{
@@ -146,11 +140,11 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
           </div>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ color: '#c9d1d9', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
-              仓库路径 <span style={{ color: '#f85149' }}>*</span>:
+              {t('multiEnvCompare.repoPath')}
             </label>
             <input
               type="text"
-              placeholder="/path/to/your/repo"
+              placeholder={t('multiEnvCompare.repoPlaceholder')}
               value={repoPath}
               onChange={(e) => setRepoPath(e.target.value)}
               style={{
@@ -166,11 +160,11 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
           </div>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ color: '#c9d1d9', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
-              Commit 1 (起始) <span style={{ color: '#f85149' }}>*</span>:
+              {t('multiEnvCompare.commit1')}
             </label>
             <input
               type="text"
-              placeholder="HEAD~10 或 commit hash"
+              placeholder={t('multiEnvCompare.commit1Placeholder')}
               value={commit1}
               onChange={(e) => setCommit1(e.target.value)}
               style={{
@@ -186,11 +180,11 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
           </div>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ color: '#c9d1d9', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
-              Commit 2 (结束) <span style={{ color: '#f85149' }}>*</span>:
+              {t('multiEnvCompare.commit2')}
             </label>
             <input
               type="text"
-              placeholder="HEAD 或 commit hash"
+              placeholder={t('multiEnvCompare.commit2Placeholder')}
               value={commit2}
               onChange={(e) => setCommit2(e.target.value)}
               style={{
@@ -206,11 +200,11 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
           </div>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ color: '#c9d1d9', fontSize: '14px', display: 'block', marginBottom: '4px' }}>
-              环境目录 (可选，逗号分隔):
+              {t('multiEnvCompare.envDirs')}
             </label>
             <input
               type="text"
-              placeholder="config/prd, config/acc, config/tst"
+              placeholder={t('multiEnvCompare.envDirsPlaceholder')}
               value={envDirs}
               onChange={(e) => setEnvDirs(e.target.value)}
               style={{
@@ -224,7 +218,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
               }}
             />
             <div style={{ marginTop: '4px', color: '#8b949e', fontSize: '12px' }}>
-              留空则自动检测环境目录 (prd, acc, tst 等)
+              {t('multiEnvCompare.envDirsHint')}
             </div>
           </div>
           <button
@@ -233,7 +227,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
             disabled={loading}
             style={{ width: '100%', opacity: loading ? 0.6 : 1 }}
           >
-            {loading ? '对比中...' : '开始对比'}
+            {loading ? t('multiEnvCompare.loading') : t('multiEnvCompare.button')}
           </button>
         </div>
       </div>
@@ -265,7 +259,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
               marginBottom: '16px',
             }}
           >
-            <h3 style={{ marginTop: 0, marginBottom: '12px' }}>对比结果汇总</h3>
+            <h3 style={{ marginTop: 0, marginBottom: '12px' }}>{t('multiEnvCompare.summary')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
               {result.map((env) => (
                 <div
@@ -281,7 +275,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
                     {env.environment}
                   </div>
                   <div style={{ color: '#8b949e', fontSize: '14px' }}>
-                    {env.jwtCount} 个 JWT 文件
+                    {env.jwtCount} {t('multiEnvCompare.jwtFiles')}
                   </div>
                 </div>
               ))}
@@ -291,7 +285,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
           {result.map((env) => (
             <div key={env.environment} style={{ marginBottom: '24px' }}>
               <h3 style={{ marginTop: 0, marginBottom: '12px', color: '#c9d1d9' }}>
-                环境: {env.environment}
+                {t('multiEnvCompare.environment')}: {env.environment}
               </h3>
               {env.jwtFiles.map((jwtFile) => {
                 const stats = calculateStats(jwtFile.changes);
@@ -308,7 +302,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
                   >
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ color: '#c9d1d9', fontWeight: '500', marginBottom: '8px' }}>
-                        文件: {jwtFile.path}
+                        {t('multiEnvCompare.file')}: {jwtFile.path}
                       </div>
                       <div
                         style={{
@@ -318,13 +312,13 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
                         }}
                       >
                         <span style={{ color: '#3fb950' }}>
-                          +{stats.addedLines} 行
+                          +{stats.addedLines} {t('multiEnvCompare.addedLines')}
                         </span>
                         <span style={{ color: '#f85149' }}>
-                          -{stats.removedLines} 行
+                          -{stats.removedLines} {t('multiEnvCompare.removedLines')}
                         </span>
                         <span style={{ color: '#8b949e' }}>
-                          {stats.changedLines} 行未变
+                          {stats.changedLines} {t('multiEnvCompare.unchangedLines')}
                         </span>
                       </div>
                     </div>
@@ -362,7 +356,7 @@ const MultiEnvCompare: React.FC<MultiEnvCompareProps> = () => {
             color: '#8b949e',
           }}
         >
-          未找到 JWT 文件变化
+          {t('multiEnvCompare.noChanges')}
         </div>
       )}
     </div>

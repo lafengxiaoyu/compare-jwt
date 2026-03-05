@@ -56,7 +56,7 @@ const App: React.FC = () => {
           className={`tab ${activeTab === 'multi-env' ? 'active' : ''}`}
           onClick={() => setActiveTab('multi-env')}
         >
-          多环境对比
+          {t('tabs.multiEnv')}
         </button>
       </div>
 
