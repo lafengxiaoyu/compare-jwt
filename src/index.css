@@ -334,3 +334,28 @@ body {
   font-size: 12px;
   line-height: 1.5;
 }
+
+.diff-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.diff-lines .diff-line-added {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.diff-lines .diff-line-removed {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.diff-lines .diff-line-unchanged {
+  color: #8b949e;
+  padding: 2px 4px;
+}

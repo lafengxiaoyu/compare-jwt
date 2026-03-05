@@ -116,6 +116,18 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
     }
   };
 
+  const renderDiffLines = (str1: string, str2: string) => {
+    const changes = diff.diffLines(str1, str2);
+    return changes.map((part, idx) => {
+      const lines = part.value.split('\n').filter(l => l.trim() !== '');
+      return lines.map((line, lineIdx) => (
+        <div key={`${idx}-${lineIdx}`} className={part.added ? 'diff-line-added' : part.removed ? 'diff-line-removed' : 'diff-line-unchanged'}>
+          {line}
+        </div>
+      ));
+    });
+  };
+
   const renderClaimsTable = () => {
     const decoded = getDecodedJWTs();
     if (!decoded) return null;
@@ -150,14 +162,18 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
                 <tr key={key} style={{ borderBottom: '1px solid #21262d' }}>
                   <td style={{ padding: '12px', color: '#c9d1d9', fontWeight: '500' }}>{key}</td>
                   <td style={{ padding: '12px', color: isRemoved ? '#f85149' : '#8b949e' }}>
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {isRemoved ? '-' : ''}{value1Str}
-                    </pre>
+                    <div className="diff-lines">
+                      {isRemoved ? <div className="diff-line-removed">{value1Str}</div> :
+                       isChanged ? renderDiffLines(value1Str, value2Str) :
+                       <div className="diff-line-unchanged">{value1Str}</div>}
+                    </div>
                   </td>
                   <td style={{ padding: '12px', color: isAdded ? '#3fb950' : '#8b949e' }}>
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {isAdded ? '+' : ''}{value2Str}
-                    </pre>
+                    <div className="diff-lines">
+                      {isAdded ? <div className="diff-line-added">{value2Str}</div> :
+                       isChanged ? renderDiffLines(value1Str, value2Str) :
+                       <div className="diff-line-unchanged">{value2Str}</div>}
+                    </div>
                   </td>
                   <td style={{ padding: '12px' }}>
                     {isAdded && <span style={{ color: '#3fb950', fontWeight: 'bold' }}>Added</span>}
