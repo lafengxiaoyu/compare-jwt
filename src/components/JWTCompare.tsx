@@ -116,15 +116,32 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
     }
   };
 
-  const renderDiffLines = (str1: string, str2: string) => {
+  const renderDiffLines = (str1: string, str2: string, side: 'left' | 'right') => {
     const changes = diff.diffLines(str1, str2);
     return changes.map((part, idx) => {
       const lines = part.value.split('\n').filter(l => l.trim() !== '');
-      return lines.map((line, lineIdx) => (
-        <div key={`${idx}-${lineIdx}`} className={part.added ? 'diff-line-added' : part.removed ? 'diff-line-removed' : 'diff-line-unchanged'}>
-          {line}
-        </div>
-      ));
+      
+      // For left side: show removed lines and unchanged lines
+      if (side === 'left') {
+        if (part.added) return null; // Don't show added lines on left
+        return lines.map((line, lineIdx) => (
+          <div key={`${idx}-${lineIdx}`} className={part.removed ? 'diff-line-removed' : 'diff-line-unchanged'}>
+            {line}
+          </div>
+        ));
+      }
+      
+      // For right side: show added lines and unchanged lines
+      if (side === 'right') {
+        if (part.removed) return null; // Don't show removed lines on right
+        return lines.map((line, lineIdx) => (
+          <div key={`${idx}-${lineIdx}`} className={part.added ? 'diff-line-added' : 'diff-line-unchanged'}>
+            {line}
+          </div>
+        ));
+      }
+      
+      return null;
     });
   };
 
@@ -136,16 +153,41 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
     const allKeys = new Set([...Object.keys(decoded1), ...Object.keys(decoded2)]);
     const keys = Array.from(allKeys);
 
+    const jsonStyle: React.CSSProperties = {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      lineHeight: '1.5',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-all',
+      background: '#0d1117',
+      padding: '8px',
+      borderRadius: '4px',
+      border: '1px solid #30363d',
+      maxHeight: '400px',
+      overflow: 'auto'
+    };
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>, side: 'left' | 'right') => {
+      const target = e.currentTarget;
+      const otherSide = side === 'left' ? 
+        target.parentElement?.nextElementSibling?.querySelector('.diff-lines') as HTMLDivElement :
+        target.parentElement?.previousElementSibling?.querySelector('.diff-lines') as HTMLDivElement;
+      
+      if (otherSide) {
+        otherSide.scrollTop = target.scrollTop;
+      }
+    };
+
     return (
       <div className="claims-table-container">
         <h3 style={{ marginBottom: '16px' }}>Claims Comparison</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #30363d' }}>
-              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>Claim</th>
-              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>JWT 1</th>
-              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>JWT 2</th>
-              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9' }}>Status</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9', width: '10%' }}>Claim</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9', width: '40%' }}>JWT 1</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9', width: '40%' }}>JWT 2</th>
+              <th style={{ textAlign: 'left', padding: '12px', color: '#c9d1d9', width: '10%' }}>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -160,22 +202,30 @@ const JWTCompare: React.FC<JWTCompareProps> = ({ t }) => {
 
               return (
                 <tr key={key} style={{ borderBottom: '1px solid #21262d' }}>
-                  <td style={{ padding: '12px', color: '#c9d1d9', fontWeight: '500' }}>{key}</td>
-                  <td style={{ padding: '12px', color: isRemoved ? '#f85149' : '#8b949e' }}>
-                    <div className="diff-lines">
+                  <td style={{ padding: '12px', color: '#c9d1d9', fontWeight: '500', verticalAlign: 'top' }}>{key}</td>
+                  <td style={{ padding: '12px', color: isRemoved ? '#f85149' : '#8b949e', verticalAlign: 'top' }}>
+                    <div 
+                      className="diff-lines" 
+                      style={jsonStyle}
+                      onScroll={(e) => handleScroll(e, 'left')}
+                    >
                       {isRemoved ? <div className="diff-line-removed">{value1Str}</div> :
-                       isChanged ? renderDiffLines(value1Str, value2Str) :
+                       isChanged ? renderDiffLines(value1Str, value2Str, 'left') :
                        <div className="diff-line-unchanged">{value1Str}</div>}
                     </div>
                   </td>
-                  <td style={{ padding: '12px', color: isAdded ? '#3fb950' : '#8b949e' }}>
-                    <div className="diff-lines">
+                  <td style={{ padding: '12px', color: isAdded ? '#3fb950' : '#8b949e', verticalAlign: 'top' }}>
+                    <div 
+                      className="diff-lines" 
+                      style={jsonStyle}
+                      onScroll={(e) => handleScroll(e, 'right')}
+                    >
                       {isAdded ? <div className="diff-line-added">{value2Str}</div> :
-                       isChanged ? renderDiffLines(value1Str, value2Str) :
+                       isChanged ? renderDiffLines(value1Str, value2Str, 'right') :
                        <div className="diff-line-unchanged">{value2Str}</div>}
                     </div>
                   </td>
-                  <td style={{ padding: '12px' }}>
+                  <td style={{ padding: '12px', verticalAlign: 'top' }}>
                     {isAdded && <span style={{ color: '#3fb950', fontWeight: 'bold' }}>Added</span>}
                     {isRemoved && <span style={{ color: '#f85149', fontWeight: 'bold' }}>Removed</span>}
                     {isChanged && <span style={{ color: '#d29922', fontWeight: 'bold' }}>Changed</span>}
