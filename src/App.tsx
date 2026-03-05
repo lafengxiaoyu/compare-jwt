@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import JWTCompare from './components/JWTCompare';
 import GitCompare from './components/GitCompare';
+import MultiEnvCompare from './components/MultiEnvCompare';
 import { useTranslation, Language } from './i18n';
 
-type TabType = 'jwt' | 'git';
+type TabType = 'jwt' | 'git' | 'multi-env';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('jwt');
@@ -51,11 +52,19 @@ const App: React.FC = () => {
         >
           {t('tabs.git')}
         </button>
+        <button
+          className={`tab ${activeTab === 'multi-env' ? 'active' : ''}`}
+          onClick={() => setActiveTab('multi-env')}
+        >
+          多环境对比
+        </button>
       </div>
 
       {activeTab === 'jwt' 
         ? <JWTCompare t={t} /> 
-        : <GitCompare t={t} />
+        : activeTab === 'git'
+        ? <GitCompare t={t} />
+        : <MultiEnvCompare />
       }
     </div>
   );

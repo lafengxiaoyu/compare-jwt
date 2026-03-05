@@ -249,6 +249,175 @@ const createDiff = (content1, content2) => {
   return changes;
 };
 
+// Compare JWT changes across multiple environments between two commits
+app.post('/api/git/compare-multiple-envs', async (req, res) => {
+  try {
+    const { repoPath, commit1, commit2, envDirs = [] } = req.body;
+
+    if (!repoPath || !commit1 || !commit2) {
+      return res.status(400).json({ error: '缺少必要参数: repoPath, commit1, commit2' });
+    }
+
+    const git = simpleGit(repoPath);
+    const results = [];
+
+    // Get list of files changed between commits
+    const diffSummary = await git.diffSummary([commit1, commit2]);
+    
+    console.log(`Comparing commits ${commit1} -> ${commit2}`);
+    console.log(`Total changed files: ${diffSummary.files.length}`);
+
+    // For each environment directory
+    for (const envDir of envDirs) {
+      console.log(`\nProcessing environment: ${envDir}`);
+      
+      // Filter files belonging to this environment directory
+      const envFiles = diffSummary.files.filter(f => f.file.startsWith(envDir));
+      
+      if (envFiles.length === 0) {
+        console.log(`  No changes in ${envDir}`);
+        continue;
+      }
+
+      console.log(`  Found ${envFiles.length} changed files in ${envDir}`);
+
+      const jwtFiles = [];
+
+      for (const file of envFiles) {
+        // Skip binary files and unsupported extensions
+        if (!shouldCheckFile(file.file)) {
+          continue;
+        }
+
+        try {
+          const content1 = await git.show([`${commit1}:${file.file}`]).catch(() => '');
+          const content2 = await git.show([`${commit2}:${file.file}`]).catch(() => '');
+
+          if (!content1 && !content2) continue;
+
+          const isJWT1 = isJWT(content1);
+          const isJWT2 = isJWT(content2);
+
+          if (isJWT1 || isJWT2) {
+            console.log(`    Found JWT: ${file.file}`);
+            
+            const json1 = isJWT1 ? decodeJWT(content1) : content1;
+            const json2 = isJWT2 ? decodeJWT(content2) : content2;
+
+            const changes = createDiff(json1 || '', json2 || '');
+
+            jwtFiles.push({
+              path: file.file.replace(envDir, ''), // Show relative path
+              fullPath: file.file,
+              changes: changes
+            });
+          }
+        } catch (err) {
+          console.error(`    Error processing ${file.file}:`, err.message);
+        }
+      }
+
+      if (jwtFiles.length > 0) {
+        results.push({
+          environment: envDir,
+          jwtCount: jwtFiles.length,
+          jwtFiles: jwtFiles
+        });
+      }
+    }
+
+    // If no envDirs provided, try to auto-detect common environment directories
+    if (envDirs.length === 0) {
+      console.log('\nNo environment directories specified, auto-detecting...');
+      
+      const envPatterns = ['prd', 'prod', 'production', 'acc', 'acceptance', 'tst', 'test', 'stg', 'staging', 'dev'];
+      const detectedEnvs = new Set();
+
+      for (const file of diffSummary.files) {
+        for (const pattern of envPatterns) {
+          if (file.file.includes(`/${pattern}/`) || file.file.startsWith(`${pattern}/`)) {
+            const envDir = file.file.substring(0, file.file.indexOf(pattern) + pattern.length);
+            detectedEnvs.add(envDir);
+            break;
+          }
+        }
+      }
+
+      const autoDetectedEnvs = Array.from(detectedEnvs);
+      
+      if (autoDetectedEnvs.length > 0) {
+        console.log(`Auto-detected environments: ${autoDetectedEnvs.join(', ')}`);
+        
+        // Re-process with auto-detected environments
+        for (const envDir of autoDetectedEnvs) {
+          console.log(`\nProcessing environment: ${envDir}`);
+          
+          const envFiles = diffSummary.files.filter(f => f.file.startsWith(envDir));
+          
+          if (envFiles.length === 0) continue;
+
+          const jwtFiles = [];
+
+          for (const file of envFiles) {
+            if (!shouldCheckFile(file.file)) continue;
+
+            try {
+              const content1 = await git.show([`${commit1}:${file.file}`]).catch(() => '');
+              const content2 = await git.show([`${commit2}:${file.file}`]).catch(() => '');
+
+              if (!content1 && !content2) continue;
+
+              const isJWT1 = isJWT(content1);
+              const isJWT2 = isJWT(content2);
+
+              if (isJWT1 || isJWT2) {
+                const json1 = isJWT1 ? decodeJWT(content1) : content1;
+                const json2 = isJWT2 ? decodeJWT(content2) : content2;
+
+                const changes = createDiff(json1 || '', json2 || '');
+
+                jwtFiles.push({
+                  path: file.file.replace(envDir, ''),
+                  fullPath: file.file,
+                  changes: changes
+                });
+              }
+            } catch (err) {
+              console.error(`    Error processing ${file.file}:`, err.message);
+            }
+          }
+
+          if (jwtFiles.length > 0) {
+            results.push({
+              environment: envDir,
+              jwtCount: jwtFiles.length,
+              jwtFiles: jwtFiles
+            });
+          }
+        }
+      }
+    }
+
+    const totalJWTs = results.reduce((sum, r) => sum + r.jwtCount, 0);
+    
+    console.log(`\n=== Summary ===`);
+    console.log(`Environments processed: ${results.length}`);
+    console.log(`Total JWT files changed: ${totalJWTs}`);
+
+    res.json({
+      commit1: commit1,
+      commit2: commit2,
+      environments: results,
+      totalEnvironments: results.length,
+      totalJWTs: totalJWTs,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: err.message || '对比失败' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
