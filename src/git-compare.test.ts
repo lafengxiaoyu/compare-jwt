@@ -67,12 +67,12 @@ describe('Git Compare API Test', () => {
         
         file.changes.forEach((change: any) => {
           if (change.added) {
-            addedLines += change.value.split('\n').filter(l => l.trim()).length;
+            addedLines += change.value.split('\n').filter((l: string) => l.trim()).length;
             if (change.value.includes('manifestVersion')) hasVersionChange = true;
             if (change.value.includes('deleteOrder')) hasNewAPI = true;
           }
           if (change.removed) {
-            removedLines += change.value.split('\n').filter(l => l.trim()).length;
+            removedLines += change.value.split('\n').filter((l: string) => l.trim()).length;
           }
         });
         
