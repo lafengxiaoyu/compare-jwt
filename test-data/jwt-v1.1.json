@@ -1,0 +1,39 @@
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "manifestVersion": "1.1",
+    "name": "Mock API Manifest",
+    "environment": "production",
+    "apis": [
+      {
+        "name": "getUser",
+        "method": "GET",
+        "endpoint": "/api/v1/users/{id}",
+        "auth": "Bearer"
+      },
+      {
+        "name": "createOrder",
+        "method": "POST",
+        "endpoint": "/api/v1/orders/",
+        "auth": "Bearer"
+      },
+      {
+        "name": "healthCheck",
+        "method": "GET",
+        "endpoint": "/health",
+        "auth": "None"
+      },
+      {
+        "name": "deleteOrder",
+        "method": "DELETE",
+        "endpoint": "/api/v1/orders/{id}",
+        "auth": "Bearer"
+      }
+    ],
+    "issuedAt": 1710000000
+  },
+  "note": "This JWT has no signature part (2 parts only)"
+}
