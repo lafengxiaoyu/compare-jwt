@@ -180,7 +180,7 @@ const GitCompare: React.FC<GitCompareProps> = ({ t }) => {
     setError('');
 
     try {
-      const requestBody = {
+      const requestBody: any = {
         repoPath,
         commit1,
         commit2,

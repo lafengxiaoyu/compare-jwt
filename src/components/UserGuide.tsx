@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from '../i18n';
 
 const UserGuide: React.FC = () => {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
 
   const isEnglish = language === 'en';
 
