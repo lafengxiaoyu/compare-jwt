@@ -7,7 +7,8 @@ export const translations = {
     tabs: {
       jwt: 'JWT File Compare',
       git: 'Git Commit Compare',
-      multiEnv: 'Multi-Env Compare'
+      multiEnv: 'Multi-Env Compare',
+      guide: 'User Guide'
     },
     jwtCompare: {
       title: 'JWT/JWE Token 1',
@@ -26,6 +27,8 @@ export const translations = {
       commit1: 'Commit 1 (Base)',
       commitPlaceholder: 'commit hash or branch',
       commit2: 'Commit 2 (Compare)',
+      file: 'File Path (Optional)',
+      filePlaceholder: 'path/to/file (e.g., test-data/test.jose)',
       button: 'Compare Git Commit',
       loading: 'Comparing...',
       scanning: 'Scanned {{total}} changed files, found {{found}} JWT files',
@@ -74,7 +77,8 @@ export const translations = {
     tabs: {
       jwt: 'JWT文件对比',
       git: 'Git提交对比',
-      multiEnv: '多环境对比'
+      multiEnv: '多环境对比',
+      guide: '使用手册'
     },
     jwtCompare: {
       title: 'JWT/JWE Token 1',
@@ -93,6 +97,8 @@ export const translations = {
       commit1: 'Commit 1 (基准)',
       commitPlaceholder: 'commit hash或分支名',
       commit2: 'Commit 2 (对比)',
+      file: '文件路径 (可选)',
+      filePlaceholder: '文件路径 (例如: test-data/test.jose)',
       button: '对比 Git 提交',
       loading: '对比中...',
       scanning: '扫描了 {{total}} 个修改的文件，找到 {{found}} 个JWT文件',
@@ -141,7 +147,8 @@ export const translations = {
     tabs: {
       jwt: 'JWT Bestand Vergelijken',
       git: 'Git Commit Vergelijken',
-      multiEnv: 'Multi-Env Vergelijken'
+      multiEnv: 'Multi-Env Vergelijken',
+      guide: 'Gebruikersgids'
     },
     jwtCompare: {
       title: 'JWT/JWE Token 1',
@@ -160,6 +167,8 @@ export const translations = {
       commit1: 'Commit 1 (Basis)',
       commitPlaceholder: 'commit hash of branch',
       commit2: 'Commit 2 (Vergelijk)',
+      file: 'Bestandspad (Optioneel)',
+      filePlaceholder: 'pad/naar/bestand (bijv. test-data/test.jose)',
       button: 'Vergelijk Git Commit',
       loading: 'Vergelijken...',
       scanning: '{{total}} gewijzigde bestanden gescand, {{found}} JWT bestanden gevonden',

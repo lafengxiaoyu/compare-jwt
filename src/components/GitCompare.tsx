@@ -25,11 +25,13 @@ const GitCompare: React.FC<GitCompareProps> = ({ t }) => {
   const [repoPath, setRepoPath] = useState('');
   const [commit1, setCommit1] = useState('');
   const [commit2, setCommit2] = useState('');
+  const [file, setFile] = useState(''); // Optional: specific file to compare
   const [jwtFiles, setJwtFiles] = useState<JwtFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [stats, setStats] = useState({ totalFiles: 0, processedFiles: 0 });
+  const [reportLoading, setReportLoading] = useState(false);
 
   const handleCompare = async () => {
     setError('');
@@ -45,16 +47,23 @@ const GitCompare: React.FC<GitCompareProps> = ({ t }) => {
     setLoading(true);
 
     try {
+      const requestBody: any = {
+        repoPath,
+        commit1,
+        commit2,
+      };
+
+      // Only include file parameter if it's provided
+      if (file.trim()) {
+        requestBody.file = file;
+      }
+
       const response = await fetch('/api/git/compare', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          repoPath,
-          commit1,
-          commit2,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data: CompareResult = await response.json();
@@ -166,9 +175,66 @@ const GitCompare: React.FC<GitCompareProps> = ({ t }) => {
     return { additions, deletions };
   };
 
+  const generateAndDownloadReport = async (format: 'markdown' | 'html' | 'json') => {
+    setReportLoading(true);
+    setError('');
+
+    try {
+      const requestBody = {
+        repoPath,
+        commit1,
+        commit2,
+        format
+      };
+
+      // Only include file parameter if it's provided
+      if (file.trim()) {
+        requestBody.file = file;
+      }
+
+      const response = await fetch('http://localhost:3001/api/git/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '生成报告失败');
+      }
+
+      // Download the report
+      const blob = new Blob([data.report], { type: getMimeType(format) });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '生成报告失败');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const getMimeType = (format: string) => {
+    switch (format) {
+      case 'markdown': return 'text/markdown';
+      case 'html': return 'text/html';
+      case 'json': return 'application/json';
+      default: return 'text/plain';
+    }
+  };
+
   return (
     <div>
-      <div className="input-section" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+      <div className="input-section" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
         <div className="input-box">
           <h3>{t('gitCompare.repoPath')}</h3>
           <input
@@ -196,6 +262,15 @@ const GitCompare: React.FC<GitCompareProps> = ({ t }) => {
             onChange={(e) => setCommit2(e.target.value)}
           />
         </div>
+        <div className="input-box">
+          <h3>{t('gitCompare.file')} (Optional)</h3>
+          <input
+            type="text"
+            placeholder={t('gitCompare.filePlaceholder')}
+            value={file}
+            onChange={(e) => setFile(e.target.value)}
+          />
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -203,6 +278,35 @@ const GitCompare: React.FC<GitCompareProps> = ({ t }) => {
       <button className="compare-btn" onClick={handleCompare} disabled={loading}>
         {loading ? t('gitCompare.loading') : t('gitCompare.button')}
       </button>
+
+      {jwtFiles.length > 0 && (
+        <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="compare-btn"
+            onClick={() => generateAndDownloadReport('markdown')}
+            disabled={reportLoading}
+            style={{ fontSize: '13px', padding: '8px 16px', opacity: reportLoading ? 0.6 : 1 }}
+          >
+            {reportLoading ? '生成中...' : '📄 下载 Markdown 报告'}
+          </button>
+          <button
+            className="compare-btn"
+            onClick={() => generateAndDownloadReport('html')}
+            disabled={reportLoading}
+            style={{ fontSize: '13px', padding: '8px 16px', opacity: reportLoading ? 0.6 : 1 }}
+          >
+            {reportLoading ? '生成中...' : '🌐 下载 HTML 报告'}
+          </button>
+          <button
+            className="compare-btn"
+            onClick={() => generateAndDownloadReport('json')}
+            disabled={reportLoading}
+            style={{ fontSize: '13px', padding: '8px 16px', opacity: reportLoading ? 0.6 : 1 }}
+          >
+            {reportLoading ? '生成中...' : '📦 下载 JSON 报告'}
+          </button>
+        </div>
+      )}
 
       {stats.totalFiles > 0 && (
         <div style={{ 

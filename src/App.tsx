@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import JWTCompare from './components/JWTCompare';
-import GitCompare from './components/GitCompare';
 import MultiEnvCompare from './components/MultiEnvCompare';
+import UserGuide from './components/UserGuide';
 import { useTranslation, Language } from './i18n';
 
-type TabType = 'jwt' | 'git' | 'multi-env';
+type TabType = 'jwt' | 'multi-env' | 'guide';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('jwt');
@@ -47,24 +47,24 @@ const App: React.FC = () => {
           {t('tabs.jwt')}
         </button>
         <button
-          className={`tab ${activeTab === 'git' ? 'active' : ''}`}
-          onClick={() => setActiveTab('git')}
-        >
-          {t('tabs.git')}
-        </button>
-        <button
           className={`tab ${activeTab === 'multi-env' ? 'active' : ''}`}
           onClick={() => setActiveTab('multi-env')}
         >
           {t('tabs.multiEnv')}
         </button>
+        <button
+          className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
+          onClick={() => setActiveTab('guide')}
+        >
+          📚 {t('tabs.guide')}
+        </button>
       </div>
 
-      {activeTab === 'jwt' 
-        ? <JWTCompare t={t} /> 
-        : activeTab === 'git'
-        ? <GitCompare t={t} />
-        : <MultiEnvCompare />
+      {activeTab === 'jwt'
+        ? <JWTCompare t={t} />
+        : activeTab === 'multi-env'
+        ? <MultiEnvCompare />
+        : <UserGuide />
       }
     </div>
   );

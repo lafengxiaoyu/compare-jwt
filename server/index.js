@@ -73,7 +73,7 @@ const isJWT = (content) => {
 };
 
 // File extensions that might contain JWT
-const jwtFileExtensions = ['.json', '.txt', '.jwt', '.token', '.env', '.config', '.secret', ''];
+const jwtFileExtensions = ['.json', '.txt', '.jwt', '.token', '.env', '.config', '.secret', '.jose', ''];
 const shouldCheckFile = (filePath) => {
   const ext = '.' + filePath.split('.').pop().toLowerCase();
   return jwtFileExtensions.some(e => filePath.endsWith(e) || e === '');
@@ -344,16 +344,16 @@ app.post('/api/git/compare-multiple-envs', async (req, res) => {
       }
 
       const autoDetectedEnvs = Array.from(detectedEnvs);
-      
+
       if (autoDetectedEnvs.length > 0) {
         console.log(`Auto-detected environments: ${autoDetectedEnvs.join(', ')}`);
-        
+
         // Re-process with auto-detected environments
         for (const envDir of autoDetectedEnvs) {
           console.log(`\nProcessing environment: ${envDir}`);
-          
+
           const envFiles = diffSummary.files.filter(f => f.file.startsWith(envDir));
-          
+
           if (envFiles.length === 0) continue;
 
           const jwtFiles = [];
@@ -395,6 +395,50 @@ app.post('/api/git/compare-multiple-envs', async (req, res) => {
             });
           }
         }
+      } else {
+        // No standard environment directories detected, process all files globally
+        console.log('\nNo standard environment directories detected, processing all files globally...');
+
+        const jwtFiles = [];
+
+        for (const file of diffSummary.files) {
+          if (!shouldCheckFile(file.file)) continue;
+
+          try {
+            const content1 = await git.show([`${commit1}:${file.file}`]).catch(() => '');
+            const content2 = await git.show([`${commit2}:${file.file}`]).catch(() => '');
+
+            if (!content1 && !content2) continue;
+
+            const isJWT1 = isJWT(content1);
+            const isJWT2 = isJWT(content2);
+
+            if (isJWT1 || isJWT2) {
+              console.log(`  Found JWT: ${file.file}`);
+
+              const json1 = isJWT1 ? decodeJWT(content1) : content1;
+              const json2 = isJWT2 ? decodeJWT(content2) : content2;
+
+              const changes = createDiff(json1 || '', json2 || '');
+
+              jwtFiles.push({
+                path: file.file,
+                fullPath: file.file,
+                changes: changes
+              });
+            }
+          } catch (err) {
+            console.error(`  Error processing ${file.file}:`, err.message);
+          }
+        }
+
+        if (jwtFiles.length > 0) {
+          results.push({
+            environment: 'All Files',
+            jwtCount: jwtFiles.length,
+            jwtFiles: jwtFiles
+          });
+        }
       }
     }
 
@@ -417,6 +461,226 @@ app.post('/api/git/compare-multiple-envs', async (req, res) => {
     res.status(500).json({ error: err.message || '对比失败' });
   }
 });
+
+// Generate report endpoint
+app.post('/api/git/generate-report', async (req, res) => {
+  try {
+    const { repoPath, commit1, commit2, file, format = 'markdown' } = req.body;
+
+    if (!repoPath || !commit1 || !commit2) {
+      return res.status(400).json({ error: '缺少必要参数' });
+    }
+
+    const git = simpleGit(repoPath);
+
+    // Get diff summary
+    const diffSummary = await git.diffSummary([commit1, commit2]);
+
+    // Get file content and changes
+    const requestBody = { repoPath, commit1, commit2 };
+    if (file) {
+      requestBody.file = file;
+    }
+
+    // Simulate the compare logic (or call the compare endpoint internally)
+    const jwtFiles = [];
+
+    for (const changedFile of diffSummary.files) {
+      // If file parameter is specified, only process that file
+      if (file && changedFile.file !== file) continue;
+
+      if (!shouldCheckFile(changedFile.file)) continue;
+
+      try {
+        const content1 = await git.show([`${commit1}:${changedFile.file}`]).catch(() => '');
+        const content2 = await git.show([`${commit2}:${changedFile.file}`]).catch(() => '');
+
+        if (!content1 && !content2) continue;
+
+        const isJWT1 = isJWT(content1);
+        const isJWT2 = isJWT(content2);
+
+        if (isJWT1 || isJWT2) {
+          const json1 = isJWT1 ? decodeJWT(content1) : content1;
+          const json2 = isJWT2 ? decodeJWT(content2) : content2;
+
+          const changes = createDiff(json1 || '', json2 || '');
+
+          // Count additions and deletions
+          let additions = 0;
+          let deletions = 0;
+          changes.forEach(part => {
+            const lines = part.value.split('\n').filter(l => l !== '');
+            if (part.added) additions += lines.length;
+            if (part.removed) deletions += lines.length;
+          });
+
+          jwtFiles.push({
+            path: changedFile.file,
+            changes: changes,
+            additions,
+            deletions
+          });
+        }
+      } catch (err) {
+        console.error(`Error processing ${changedFile.file}:`, err.message);
+      }
+    }
+
+    // Generate report based on format
+    let report = '';
+    const timestamp = new Date().toISOString();
+
+    if (format === 'markdown') {
+      report = generateMarkdownReport(repoPath, commit1, commit2, jwtFiles, timestamp);
+    } else if (format === 'json') {
+      report = JSON.stringify({
+        repoPath,
+        commit1,
+        commit2,
+        files: jwtFiles,
+        totalFiles: jwtFiles.length,
+        timestamp
+      }, null, 2);
+    } else if (format === 'html') {
+      report = generateHTMLReport(repoPath, commit1, commit2, jwtFiles, timestamp);
+    }
+
+    res.json({
+      report,
+      format,
+      filename: `jwt-compare-report-${timestamp.split('T')[0]}.${format}`
+    });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: err.message || '生成报告失败' });
+  }
+});
+
+// Generate Markdown report
+const generateMarkdownReport = (repoPath, commit1, commit2, jwtFiles, timestamp) => {
+  let md = `# JWT/JWE 对比报告\n\n`;
+  md += `**生成时间:** ${timestamp}\n\n`;
+  md += `**仓库路径:** \`${repoPath}\`\n\n`;
+  md += `**提交范围:** ${commit1} → ${commit2}\n\n`;
+  md += `**文件总数:** ${jwtFiles.length}\n\n`;
+  md += `---\n\n`;
+
+  if (jwtFiles.length === 0) {
+    md += `未发现 JWT/JWE 文件的变化。\n`;
+  } else {
+    jwtFiles.forEach((file, idx) => {
+      md += `## ${idx + 1}. ${file.path}\n\n`;
+      md += `**变更统计:** +${file.additions} -${file.deletions}\n\n`;
+      md += `### 详细变更\n\n`;
+      md += `\`\`\`diff\n`;
+
+      file.changes.forEach(part => {
+        const lines = part.value.split('\n').filter(l => l !== '');
+        lines.forEach(line => {
+          if (part.added) {
+            md += `+${line}\n`;
+          } else if (part.removed) {
+            md += `-${line}\n`;
+          } else {
+            md += ` ${line}\n`;
+          }
+        });
+      });
+
+      md += `\`\`\`\n\n`;
+      md += `---\n\n`;
+    });
+  }
+
+  return md;
+};
+
+// Generate HTML report
+const generateHTMLReport = (repoPath, commit1, commit2, jwtFiles, timestamp) => {
+  let html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWT/JWE 对比报告</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 20px; background: #f6f8fa; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { color: #24292e; margin-bottom: 5px; }
+    .meta { color: #586069; font-size: 14px; margin-bottom: 30px; }
+    .file-section { margin-bottom: 30px; padding: 20px; background: #f6f8fa; border-radius: 6px; }
+    .file-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .file-path { font-weight: 600; color: #24292e; }
+    .stats { font-size: 14px; }
+    .additions { color: #28a745; }
+    .deletions { color: #d73a49; }
+    .diff { background: #fff; border: 1px solid #e1e4e8; border-radius: 4px; overflow-x: auto; }
+    .diff-line { padding: 2px 10px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; line-height: 1.45; }
+    .diff-added { background: #e6ffed; color: #22863a; }
+    .diff-removed { background: #ffeef0; color: #b31d28; }
+    .diff-unchanged { color: #24292e; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 JWT/JWE 对比报告</h1>
+    <div class="meta">
+      <p><strong>生成时间:</strong> ${timestamp}</p>
+      <p><strong>仓库路径:</strong> <code>${repoPath}</code></p>
+      <p><strong>提交范围:</strong> ${commit1} → ${commit2}</p>
+      <p><strong>文件总数:</strong> ${jwtFiles.length}</p>
+    </div>
+`;
+
+  if (jwtFiles.length === 0) {
+    html += `    <div class="file-section">
+      <p>未发现 JWT/JWE 文件的变化。</p>
+    </div>`;
+  } else {
+    jwtFiles.forEach((file, idx) => {
+      html += `    <div class="file-section">
+      <div class="file-header">
+        <div class="file-path">${idx + 1}. ${file.path}</div>
+        <div class="stats">
+          <span class="additions">+${file.additions}</span>
+          <span class="deletions">-${file.deletions}</span>
+        </div>
+      </div>
+      <div class="diff">`;
+
+      file.changes.forEach(part => {
+        const lines = part.value.split('\n').filter(l => l !== '');
+        lines.forEach(line => {
+          const lineClass = part.added ? 'diff-added' : part.removed ? 'diff-removed' : 'diff-unchanged';
+          const prefix = part.added ? '+' : part.removed ? '-' : ' ';
+          html += `        <div class="diff-line ${lineClass}">${prefix}${escapeHtml(line)}</div>\n`;
+        });
+      });
+
+      html += `      </div>
+    </div>\n`;
+    });
+  }
+
+  html += `  </div>
+</body>
+</html>`;
+
+  return html;
+};
+
+// Escape HTML special characters
+const escapeHtml = (text) => {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+};
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

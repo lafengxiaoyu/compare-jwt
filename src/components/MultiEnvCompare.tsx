@@ -29,6 +29,7 @@ const MultiEnvCompare: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [apiBaseUrl, setApiBaseUrl] = useState('http://localhost:3001');
+  const [reportLoading, setReportLoading] = useState(false);
 
   const handleCompare = async () => {
     setError('');
@@ -111,6 +112,58 @@ const MultiEnvCompare: React.FC = () => {
     });
 
     return { addedLines, removedLines, changedLines };
+  };
+
+  const generateAndDownloadReport = async (format: 'markdown' | 'html' | 'json') => {
+    setReportLoading(true);
+    setError('');
+
+    try {
+      const requestBody = {
+        repoPath,
+        commit1,
+        commit2,
+        format
+      };
+
+      const response = await fetch(`${apiBaseUrl}/api/git/generate-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '生成报告失败');
+      }
+
+      // Download the report
+      const blob = new Blob([data.report], { type: getMimeType(format) });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '生成报告失败');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const getMimeType = (format: string) => {
+    switch (format) {
+      case 'markdown': return 'text/markdown';
+      case 'html': return 'text/html';
+      case 'json': return 'application/json';
+      default: return 'text/plain';
+    }
   };
 
   return (
@@ -229,6 +282,35 @@ const MultiEnvCompare: React.FC = () => {
           >
             {loading ? t('multiEnvCompare.loading') : t('multiEnvCompare.button')}
           </button>
+
+          {result && result.length > 0 && (
+            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                className="compare-btn"
+                onClick={() => generateAndDownloadReport('markdown')}
+                disabled={reportLoading}
+                style={{ fontSize: '13px', padding: '8px 16px', opacity: reportLoading ? 0.6 : 1 }}
+              >
+                {reportLoading ? '生成中...' : '📄 下载 Markdown 报告'}
+              </button>
+              <button
+                className="compare-btn"
+                onClick={() => generateAndDownloadReport('html')}
+                disabled={reportLoading}
+                style={{ fontSize: '13px', padding: '8px 16px', opacity: reportLoading ? 0.6 : 1 }}
+              >
+                {reportLoading ? '生成中...' : '🌐 下载 HTML 报告'}
+              </button>
+              <button
+                className="compare-btn"
+                onClick={() => generateAndDownloadReport('json')}
+                disabled={reportLoading}
+                style={{ fontSize: '13px', padding: '8px 16px', opacity: reportLoading ? 0.6 : 1 }}
+              >
+                {reportLoading ? '生成中...' : '📦 下载 JSON 报告'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
